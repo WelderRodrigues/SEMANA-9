@@ -1,11 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
+import socketio from "socket.io-client";
 
 import "./styles.css";
 
 export default function Dashboard() {
   const [spots, setSpots] = useState([]);
+  const [request, setRequest] = useState([]);
+
+  const user_id = localStorage.getItem("user");
+
+  const socket = useMemo(
+    () =>
+      socketio("http://localhost:3333", {
+        query: { user_id },
+      }),
+    [user_id]
+  );
+
+  useEffect(() => {
+    socket.on("booking_request", (data) => {
+      setRequest([...request, data]);
+    });
+  }, [request, socket]);
 
   useEffect(() => {
     async function loadSpots() {
@@ -19,6 +37,20 @@ export default function Dashboard() {
   }, []);
   return (
     <>
+      <ul className="notifications">
+        {request.map((request) => (
+          <li key={request._id}>
+            <p>
+              <strong>{request.user.email}</strong> está solicitando uma reserva
+              em <strong>{request.spot.company}</strong> para a data:{" "}
+              <strong>{request.date}</strong>
+            </p>
+            <button className="accept">ACEITAR</button>
+            <button className="reject">REJEITAR</button>
+          </li>
+        ))}
+      </ul>
+
       <ul className="spot-list">
         {spots.map((spot) => (
           <li key={spot._id}>

@@ -10,9 +10,7 @@ const app = express();
 const server = http.Server(app);
 const io = socketio(server);
 
-io.on("connection", (socket) => {
-  console.log("Usuário conectado ", socket.id);
-});
+const connectedUsers = {};
 
 mongoose.connect(
   "mongodb+srv://welder:welder@cluster0-bvx8q.mongodb.net/semana9?retryWrites=true&w=majority",
@@ -21,6 +19,21 @@ mongoose.connect(
     useUnifiedTopology: true,
   }
 );
+
+io.on("connection", (socket) => {
+  const { user_id } = socket.handshake.query;
+
+  connectedUsers[user_id] = socket.id;
+  /* console.log(socket.handshake.query);
+  console.log("Usuário conectado ", socket.id); */
+});
+
+app.use((request, response, next) => {
+  request.io = io;
+  request.connectedUsers = connectedUsers;
+
+  return next();
+});
 
 app.use(cors());
 
